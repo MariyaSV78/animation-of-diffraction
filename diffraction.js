@@ -1,17 +1,20 @@
 let wavelengthSlider, slitWidthSlider;
 let waveOffset = 0; // Offset for wavefront animation
-let waveSpeed = 2;  // Speed at which the wavefronts move
+let waveSpeed = 1;  // Speed at which the wavefronts move
+let waveOffsetShift = 140 // Shift of wave front
+let numWaves = 18;  // Number of wavefronts to display
+
 
 
 function setup() {
-  createCanvas(500, 500);
+  createCanvas(500, 600);
   background(225);
   wavelengthSlider = createSlider(400, 700, 500); // Wavelength in nm
-  wavelengthSlider.position(10, 10);
+  wavelengthSlider.position(50, 570);
   wavelengthSlider.style("accent-color", "#000"); // Set thumb color to black
 
-  slitWidthSlider = createSlider(0.5, 5.0, 1.0, 0.1); // Slit width in microns
-  slitWidthSlider.position(10, 50);
+  slitWidthSlider = createSlider(0.3, 5.0, 0.5, 0.1); // Slit width in microns
+  slitWidthSlider.position(320, 570);
   slitWidthSlider.style("accent-color", "#000"); // Set thumb color to black
 }
 
@@ -28,35 +31,25 @@ function draw() {
   let slitWidth = slitWidthSlider.value() * 1e-6; // Convert microns to meters
   let slitPixelWidth = map(slitWidthSlider.value(), 0.5, 5.0, 20, 200); // Map slit width to pixel width
 
-  console.log("Slit Pixel Width:", slitPixelWidth);
-
   let color = wavelengthToColor(wavelengthSlider.value()); // Get color based on wavelength
 
   let D = 1.0; // Distance to screen in meters
   let scaleFactor = 100; // Scale factor for visualization
 
-  // Draw the screen (écran)
-  fill(220); // Gray color for the screen
-  noStroke();
-  rect(width / 2 - 150, 140, 300, 20); // Taller screen representation
+//   // Draw the screen (écran)
+//   fill(220); // Gray color for the screen
+//   noStroke();
+//   rect(width / 2 - 248, 140, width - 2, 20); // Taller screen representation
 
-  // Draw the slit
-  fill(255); // Black color for the slit
-  noStroke();
-  rect(width / 2 - slitPixelWidth / 2, 140, slitPixelWidth, 20); // Slit representation in the center of the screen
+//   // Draw the slit
+//   fill(255); // Black color for the slit
+//   noStroke();
+//   rect(width / 2 - slitPixelWidth / 2, 140, slitPixelWidth, 20); // Slit representation in the center of the screen
 
-  // Labels for sliders
-  fill(0);
-  stroke(color);
-  strokeWeight(1); // Set border thickness
-  text("Wavelength (nm): " + wavelengthSlider.value(), 10, 40);
-  noStroke();
-  text("Slit Width (μm): " + slitWidthSlider.value(), 10, 80);
 
-  // Draw the incident plane wave
-  drawPlaneWave();
 
- 
+   push(); // Save the current drawing state
+
   // Draw the 2D diffraction pattern
   translate(width / 2, height / 2 + 190); // Move origin to the center of the canvas for diffraction pattern
  
@@ -75,18 +68,69 @@ function draw() {
       point(i, j + 30); // Draw the 2D pattern above the plot
     }
   }
-  // Update waveOffset for animation
-  waveOffset += 2; // Adjust speed of the wavefront animation
+//   // Loop over pixel positions
+//   for (let i = -width / 2; i < width / 2; i++) {
+//     let x = i / scaleFactor; // Convert pixel position to meters
+//     let beta = (PI * slitWidth * x) / (wavelength * D);
+//     let intensity = beta !== 0 ? pow(sin(beta) / beta, 2) : 1;
 
+//     // Draw vertical lines for diffraction pattern
+//     stroke(color);
+//     line(i, 0, i, -intensity * 150); // Adjust scaling as needed
+
+//     // Draw intensity map for 2D pattern
+//     for (let j = -20; j < 20; j++) {
+//       let brightness = map(pow(intensity, 0.4), 0, 1, 0, 255); // Adjust brightness mapping as needed
+//       stroke(color.levels[0], color.levels[1], color.levels[2], brightness);
+//       point(i, j + 30); // Adjust position as needed
+//     }
+//   }
+
+  pop(); // Restore the previous drawing state
+
+  // Draw the incident plane wave
+  drawPlaneWave();
+
+  // Draw the animated diffraction pattern
+  drawDiffractionPattern(slitPixelWidth);
+
+    
+  // Draw the screen (écran)
+  fill(180); // Gray color for the screen
+  noStroke();
+  rect(width / 2 - 248, 150, width - 2, 10); // Taller screen representation 
+    
+ // Draw the slit
+  fill(255); // Black color for the slit
+  noStroke();
+  rect(width / 2 - slitPixelWidth / 2, 150, slitPixelWidth, 10); // Slit representation in the center of the screen
+
+  
+  // Labels for sliders
+  fill(0);
+  stroke(color);
+  strokeWeight(1); // Set border thickness
+  text("Wavelength (nm): " + wavelengthSlider.value(), 50, 560);
+  noStroke();
+  text("Slit Width (μm): " + slitWidthSlider.value(), 320, 560);
+
+  
+  // Update waveOffset for animation
+  
+  if (waveOffset < height / 20){
+    waveOffset += 2; // Adjust speed of the wavefront animation
+    waveOffsetShift -= 1;
+  }else {waveOffset = 0; waveOffsetShift = 140}
+  
   endShape();
 }
 
 // Function to draw the incident plane wave
 function drawPlaneWave() {
-  let numLines = 10; // Number of wavefront lines
-  let lineSpacing = 20; // Spacing between wavefront lines
+  let numLines = 12; // Number of wavefront lines
+  let lineSpacing = 12; // Spacing between wavefront lines
   let wavelength = wavelengthSlider.value(); // Get the current wavelength from the slider
-
+let yOffset
   // Convert the wavelength to a color
   let color = wavelengthToColor(wavelength);
 
@@ -96,15 +140,41 @@ function drawPlaneWave() {
 
   // Draw wavefront lines moving towards the slit
   for (let i = 0; i < numLines; i++) {
-    let yOffset = waveOffset - i * lineSpacing;
+    yOffset = (waveOffset - i * lineSpacing) + waveOffsetShift;
 
-    // Debugging: Print yOffset and end positions
-    console.log("Drawing line at yOffset:", yOffset);
 
     // Draw the wavefront line moving towards the slit
     line(width / 2 - 150, yOffset, width / 2 + 150, yOffset); // Corrected end X position
   }
+
 }
+
+// Function to draw the diffracted waves after the slit
+function drawDiffractionPattern(slitPixelWidth) {
+  let wavelength = wavelengthSlider.value(); // Get the current wavelength from the slider
+  let color = wavelengthToColor(wavelength);
+  let numWaves = 6; // Number of diffracted wavefronts
+  let waveSpacing = 40; // Spacing between diffracted wavefronts
+
+  stroke(color);
+  strokeWeight(3);
+  noFill();
+
+  for (let i = 0; i < numWaves; i++) {
+    let radius = waveOffset + i * waveSpacing;
+    // arc(width / 2, 150, radius * 2, radius * 2, 0, PI); // Draw the diffracted wavefront as an arc
+    // arc(width / 2 - slitPixelWidth / 6, 150, radius * 2, radius * 2, 0, PI); // Draw the diffracted wavefront as an arc
+    // arc(width / 2 + slitPixelWidth / 6, 150, radius * 2, radius * 2, 0, PI); // Draw the diffracted wavefront as an arc    
+    arc(width / 2 - slitPixelWidth / 4, 159, radius * 2, radius * 2, 0, PI); // Draw the diffracted wavefront as an arc
+    arc(width / 2 + slitPixelWidth / 4, 159, radius * 2, radius * 2, 0, PI); // Draw the diffracted wavefront as an arc
+    arc(width / 2 - slitPixelWidth / 2, 159, radius * 2, radius * 2, 0, PI); // Draw the diffracted wavefront as an arc
+    arc(width / 2 + slitPixelWidth / 2, 159, radius * 2, radius * 2, 0, PI); // Draw the diffracted wavefront as an arc
+
+
+  }
+}
+
+
 
 function wavelengthToColor(wavelength) {
   let r, g, b;
