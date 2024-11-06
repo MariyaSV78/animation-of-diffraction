@@ -5,6 +5,7 @@ let waveOffsetShift = 140; // Shift of wave front
 let numWaves = 18; // Number of wavefronts to display
 
 function setup() {
+  console.log(width, height, PI)
   createCanvas(500, 600);
   background(225);
   wavelengthSlider = createSlider(400, 700, 500); // Wavelength in nm
@@ -40,7 +41,7 @@ function draw() {
 
   let D = 1.0; // Distance to screen in meters
 
-  let scaleFactor = 100; // Scale factor for visualization
+  let scaleFactor = 500; // Scale factor for visualization
 
   push(); // Save the current drawing state
 
@@ -51,8 +52,8 @@ function draw() {
     let x = i / scaleFactor; // Convert pixel position to meters
     let beta = (PI * slitWidth * x) / (wavelength * D);
     let intensity_dif = beta !== 0 ? pow(sin(beta) / beta, 2) : 1;
-    let alpha = (PI * distance * x) / (wavelength * D);
-    let intensity_interf = alpha !== 0 ? pow(cos(alpha), 2) : 1;
+    let alpha = (PI * (distance + slitWidth) * x) / (wavelength * D);
+    let intensity_interf = pow(cos(alpha), 2);
     
     let intensity = intensity_interf * intensity_dif
         
